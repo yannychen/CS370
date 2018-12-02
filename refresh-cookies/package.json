@@ -1,5 +1,5 @@
 {
-  "name": "Final Class",
+  "name": "final-class",
   "version": "1.0.0",
   "dependencies": {
     "firebase-admin": "^6.3.0",
