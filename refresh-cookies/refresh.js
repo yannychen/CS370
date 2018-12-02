@@ -34,6 +34,7 @@ const request = defaultRequest.defaults({
     },
     followAllRedirects: true
 });
+const COOKIE_DOMAINS = ["https://home.cunyfirst.cuny.edu", "https://hrsa.cunyfirst.cuny.edu", "https://cunyfirst.cuny.edu", "https://cuny.edu"];
 
 async function refreshUserCookie(user) {
     const userData = user.data();
@@ -53,9 +54,16 @@ async function refreshUserCookie(user) {
     });
 
     if (response.includes('<title>Student Center</title>')) {
-        user.ref.update({
-            lastCookieRefresh: Timestamp.now()
-        });
+        const updateVals = {
+            lastCookieRefresh: Timestamp.now(),
+            cookies: {}
+        };
+
+        for (let domain of COOKIE_DOMAINS) {
+            updateVals.cookies[domain] = jar.getCookieString(domain);
+        }
+
+        user.ref.update(updateVals);
         console.log(user.id + ' cookies refreshed.');
     } else {
         user.ref.update({
