@@ -17,14 +17,14 @@ async function runJob() {
     const users = await Users.where('lastCookieRefresh', '<=', timeLimit).get();
 
     if (users.empty) {
-        setTimeout(runJob, 10000);
+        setTimeout(runJob, 60000);
         return;
     }
 
     const promiseMap = users.docs.map((user) => refreshUserCookie(user));
     await Promise.all(promiseMap);
 
-    setTimeout(runJob, 10000);
+    setTimeout(runJob, 60000);
 }
 
 const defaultRequest = require('request-promise-native');
