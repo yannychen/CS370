@@ -44,7 +44,14 @@ async function refreshUserCookie(user) {
         const split = userData.cookies[domain].split('; ');
 
         split.forEach(function (cookie) {
-            jar.setCookie(request.cookie(cookie), domain);
+            if (cookie.includes('PS_TOKENEXPIRE')) {
+                let date = new Date().toUTCString();
+                date = date.replace(/ /g, "_");
+                date = date.substring(date.indexOf(",") + 2);
+                jar.setCookie(request.cookie('PS_TOKENEXPIRE=' + date), domain);
+            } else {
+                jar.setCookie(request.cookie(cookie), domain);
+            }
         });
     }
 
@@ -55,15 +62,15 @@ async function refreshUserCookie(user) {
 
     if (response.includes("Page='SSS_STUDENT_CENTER'")) {
         const updateVals = {
-            lastCookieRefresh: Timestamp.now(),
-            cookies: {}
+            lastCookieRefresh: Timestamp.now()
+            // cookies: {}
         };
 
-        for (let domain of COOKIE_DOMAINS) {
-            updateVals.cookies[domain] = jar.getCookieString(domain);
-        }
+        // for (let domain of COOKIE_DOMAINS) {
+        //     updateVals.cookies[domain] = jar.getCookieString(domain);
+        // }
 
-        // user.ref.update(updateVals);
+        user.ref.update(updateVals);
         console.log(user.id + ' cookies refreshed.');
     } else {
         console.log(response);
