@@ -63,7 +63,7 @@ async function refreshUserCookie(user) {
             updateVals.cookies[domain] = jar.getCookieString(domain);
         }
 
-        user.ref.update(updateVals);
+        // user.ref.update(updateVals);
         console.log(user.id + ' cookies refreshed.');
     } else {
         console.log(response);
