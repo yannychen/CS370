@@ -1,7 +1,7 @@
 const admin = require('firebase-admin');
 
 admin.initializeApp({
-    credential: admin.credential.applicationDefault()
+    projectId: 'symbolic-path-223920'
 });
 const settings = {timestampsInSnapshots: true};
 admin.firestore().settings(settings);
