@@ -11,6 +11,8 @@ const FieldValue = admin.firestore.FieldValue;
 const Timestamp = admin.firestore.Timestamp;
 const Users = db.collection('users');
 
+const messaging = admin.messaging();
+
 async function runJob() {
     const timeLimit = Timestamp.fromDate(new Date(Date.now() - (1000 * 60 * 25)));
 
@@ -44,14 +46,7 @@ async function refreshUserCookie(user) {
         const split = userData.cookies[domain].split('; ');
 
         split.forEach(function (cookie) {
-            if (cookie.includes('PS_TOKENEXPIRE')) {
-                let date = new Date().toUTCString();
-                date = date.replace(/ /g, "_");
-                date = date.substring(date.indexOf(",") + 2);
-                jar.setCookie(request.cookie('PS_TOKENEXPIRE=' + date), domain);
-            } else {
-                jar.setCookie(request.cookie(cookie), domain);
-            }
+            jar.setCookie(request.cookie(cookie), domain);
         });
     }
 
@@ -62,13 +57,13 @@ async function refreshUserCookie(user) {
 
     if (response.includes("Page='SSS_STUDENT_CENTER'")) {
         const updateVals = {
-            lastCookieRefresh: Timestamp.now()
-            // cookies: {}
+            lastCookieRefresh: Timestamp.now(),
+            cookies: {}
         };
 
-        // for (let domain of COOKIE_DOMAINS) {
-        //     updateVals.cookies[domain] = jar.getCookieString(domain);
-        // }
+        for (let domain of COOKIE_DOMAINS) {
+            updateVals.cookies[domain] = jar.getCookieString(domain);
+        }
 
         user.ref.update(updateVals);
         console.log(user.id + ' cookies refreshed.');
@@ -77,6 +72,12 @@ async function refreshUserCookie(user) {
         user.ref.update({
             cookies: FieldValue.delete(),
             lastCookieRefresh: FieldValue.delete()
+        });
+        messaging.send({
+            data: {
+                cookie_expired: true
+            },
+            token: userData.fcmToken
         });
         console.log(user.id + ' cookies expired.');
     }
