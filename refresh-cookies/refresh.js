@@ -36,7 +36,7 @@ const request = defaultRequest.defaults({
     },
     followAllRedirects: true
 });
-const COOKIE_DOMAINS = ["https://home.cunyfirst.cuny.edu", "https://hrsa.cunyfirst.cuny.edu", "https://cunyfirst.cuny.edu", "https://ssologin.cuny.edu", "https://cuny.edu"];
+const COOKIE_DOMAINS = ["https://home.cunyfirst.cuny.edu", "https://hrsa.cunyfirst.cuny.edu", "https://ssologin.cuny.edu"];
 
 async function refreshUserCookie(user) {
     const userData = user.data();
@@ -49,11 +49,6 @@ async function refreshUserCookie(user) {
             jar.setCookie(request.cookie(cookie), domain);
         });
     }
-
-    await request.get({
-        url: 'https://home.cunyfirst.cuny.edu/psp/cnyepprd/EMPLOYEE/EMPL/h/?tab=DEFAULT',
-        jar: jar
-    });
 
     const response = await request.get({
         url: 'https://hrsa.cunyfirst.cuny.edu/psc/cnyhcprd/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL',
@@ -88,12 +83,5 @@ async function refreshUserCookie(user) {
     }
 
 }
-
-messaging.send({
-    data: {
-        cookie_expired: 'true'
-    },
-    token: userData.fcmToken
-});
 
 runJob();
