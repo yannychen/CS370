@@ -50,6 +50,11 @@ async function refreshUserCookie(user) {
         });
     }
 
+    await request.get({
+        url: 'https://home.cunyfirst.cuny.edu/psp/cnyepprd/EMPLOYEE/EMPL/h/?tab=DEFAULT',
+        jar: jar
+    });
+
     const response = await request.get({
         url: 'https://hrsa.cunyfirst.cuny.edu/psc/cnyhcprd/EMPLOYEE/HRMS/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL',
         jar: jar
@@ -75,7 +80,7 @@ async function refreshUserCookie(user) {
         });
         messaging.send({
             data: {
-                cookie_expired: true
+                cookie_expired: 'true'
             },
             token: userData.fcmToken
         });
@@ -83,5 +88,12 @@ async function refreshUserCookie(user) {
     }
 
 }
+
+messaging.send({
+    data: {
+        cookie_expired: 'true'
+    },
+    token: userData.fcmToken
+});
 
 runJob();
