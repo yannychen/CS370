@@ -72,12 +72,13 @@ async function refreshUserCookie(user) {
         user.ref.update({
             cookies: FieldValue.delete(),
             lastCookieRefresh: FieldValue.delete()
-        });
-        messaging.send({
-            data: {
-                cookie_expired: 'true'
-            },
-            token: userData.fcmToken
+        }).then(() => {
+            messaging.send({
+                data: {
+                    cookie_expired: 'true'
+                },
+                token: userData.fcmToken
+            });
         });
         console.log(user.id + ' cookies expired.');
     }
