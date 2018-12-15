@@ -14,7 +14,7 @@ const Users = db.collection('users');
 const messaging = admin.messaging();
 
 async function runJob() {
-    const timeLimit = Timestamp.fromDate(new Date(Date.now() - (1000 * 60 * 25)));
+    const timeLimit = Timestamp.fromDate(new Date(Date.now() - (1000 * 60 * 25))); //25 minutes
 
     const users = await Users.where('lastCookieRefresh', '<=', timeLimit).get();
 
@@ -67,11 +67,22 @@ async function refreshUserCookie(user) {
 
         user.ref.update(updateVals);
         console.log(user.id + ' cookies refreshed.');
+
+        // 9 hours
+        if (Date.now() - userData.cookieCreatedAt.toMillis() > (1000 * 60 * 60 * 9)) {
+            messaging.send({
+                data: {
+                    cookie_expired: 'true'
+                },
+                token: userData.fcmToken
+            });
+        }
     } else {
         console.log(response);
         user.ref.update({
             cookies: FieldValue.delete(),
-            lastCookieRefresh: FieldValue.delete()
+            lastCookieRefresh: FieldValue.delete(),
+            cookieCreatedAt: FieldValue.delete()
         }).then(() => {
             messaging.send({
                 data: {
