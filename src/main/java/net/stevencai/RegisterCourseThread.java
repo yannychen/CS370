@@ -18,9 +18,6 @@ import java.util.concurrent.ExecutionException;
 
 public class RegisterCourseThread extends Thread
 {
-
-    private static final String USERNAME="zhenhua.cai43";
-    private static final String PASSWORD="WWW123abccom";
     private String EMPLID="";
     private String CAREER="UGRD";
     private String INSTITUTION="QNS01";
