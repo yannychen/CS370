@@ -261,14 +261,14 @@ public class Firebase {
                 .document(deviceID)
                 .get().get().get("selectedCourses");
         Map<String,Object> map=new HashMap<>();
-        map.put("selectedCourses",selectedSections);
+        //map.put("selectedCourses",selectedSections);
 
         Map<String,Object> sectionname= (Map<String, Object>) selectedSections.get(section);
         sectionname.put("status",message);
         selectedSections.put(section,sectionname);
         ApiFuture<WriteResult> update=db.collection("users")
                 .document(deviceID)
-                .set(map,SetOptions.merge());
+                .set(selectedSections,SetOptions.merge());
     }
     public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
 
