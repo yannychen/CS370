@@ -176,7 +176,6 @@ public class Firebase {
         String deviceid= query.get().get().getDocuments().get(0).getId();
         return deviceid;
     }
-
     public static void searchOpenCoursesAndRegister() throws ExecutionException, InterruptedException {
         List<String> colleges=searchColleges();
         colleges.forEach(college->{
