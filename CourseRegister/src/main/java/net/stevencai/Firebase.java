@@ -26,13 +26,11 @@ public class Firebase {
         try {
             //serviceAccount = new FileInputStream("resources/symbolic-path-223920-firebase-adminsdk-7zqif-b2652eb035.json");
             FirebaseOptions options = new FirebaseOptions.Builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                    .setCredentials(GoogleCredentials.getApplicationDefault())
                     .setDatabaseUrl("https://symbolic-path-223920.firebaseio.com")
                     .build();
             FirebaseApp.initializeApp(options);
             db= FirestoreClient.getFirestore();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
