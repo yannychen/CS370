@@ -215,6 +215,7 @@ public class RegisterCourseThread extends Thread
 
         //check if the course has already been registered.
         if(isCoursesRegistered(homePage,courses[0])) {
+            valid=false;
             return false;
         }
         //check if the course is in the shopping cart.
