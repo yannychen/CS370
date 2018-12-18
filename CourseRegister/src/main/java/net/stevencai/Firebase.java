@@ -7,12 +7,16 @@ import com.google.cloud.firestore.*;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingException;
+import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.Notification;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-
-
 
 
 public class Firebase {
@@ -20,7 +24,7 @@ public class Firebase {
     static{
         FileInputStream serviceAccount = null;
         try {
-            serviceAccount = new FileInputStream("resources/symbolic-path-223920-firebase-adminsdk-7zqif-b2652eb035.json");
+            //serviceAccount = new FileInputStream("resources/symbolic-path-223920-firebase-adminsdk-7zqif-b2652eb035.json");
             FirebaseOptions options = new FirebaseOptions.Builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                     .setDatabaseUrl("https://symbolic-path-223920.firebaseio.com")
@@ -141,7 +145,9 @@ public class Firebase {
         Map<String, String> cookies = (Map<String, String>) document.get("cookies");
         if (cookies != null)
             cookies.forEach((k, v) -> {
+                if(!k.startsWith("https://ssologin")) return;
                 String[] array = v.split("\\s*;\\s*");
+
                 for (String a : array) {
                     String[] pair = a.split("=");
                     Date date = new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 10);
@@ -168,13 +174,17 @@ public class Firebase {
      * @throws ExecutionException exception
      * @throws InterruptedException exception
      */
-    private static String getUserToken(String college,String term,String career,String section) throws ExecutionException, InterruptedException {
+    private static List<String> getUserToken(String college,String term,String career,String section) throws ExecutionException, InterruptedException {
         Query query=db.collection("priority1")
                 .document(college).collection(term)
                 .document(career).collection(section)
-                .orderBy("time").limit(1);
-        String deviceid= query.get().get().getDocuments().get(0).getId();
-        return deviceid;
+                .orderBy("time");
+        List<QueryDocumentSnapshot> snapshots= query.get().get().getDocuments();
+        List<String> deviceids=new LinkedList<>();
+        for (QueryDocumentSnapshot snapshot : snapshots) {
+            deviceids.add(snapshot.getId());
+        }
+        return deviceids;
     }
     public static void searchOpenCoursesAndRegister() throws ExecutionException, InterruptedException {
         List<String> colleges=searchColleges();
@@ -183,8 +193,10 @@ public class Firebase {
                 searchMajors(college).forEach(major->{
                     try {
                         searchTerms(college,major).forEach(term->{
+                            if(term.equals("1189")) return;
                             try {
                                 searchCareers(college,major,term).forEach(career->{
+                                    //if(career.equals("GRAD")) return;
                                     try {
                                         searchCourses(college,major,term,career).forEach(course->{
                                             try {
@@ -193,10 +205,17 @@ public class Firebase {
                                                     try {
                                                         if (isSectionOpen(college, major, term, career, course, section))
                                                          {
-                                                             String deviceID=getUserToken(college,term,career,section);
-                                                             Set<Cookie> cookies=getUserCookie(deviceID);
-                                                             RegisterCourseThread thread=new RegisterCourseThread(cookies,section,career,term,college,deviceID);
-                                                             thread.start();
+                                                             List<String> deviceIDs=getUserToken(college,term,career,section);
+                                                             for (String deviceID : deviceIDs) {
+                                                                 if(!RegisterCourseThread.hasSpots) break;
+                                                                 Set<Cookie> cookies=getUserCookie(deviceID);
+                                                                 RegisterCourseThread thread=new RegisterCourseThread(cookies,section,career,term,college,deviceID);
+                                                                 thread.start();
+                                                                 //System.out.println(course+" "+section);
+                                                                 Thread.sleep(1000);
+                                                             }
+                                                             RegisterCourseThread.hasSpots=true;
+
                                                         }
                                                     } catch (ExecutionException e) {
                                                         e.printStackTrace();
@@ -205,6 +224,11 @@ public class Firebase {
                                                     }
                                                     catch(Exception ex){
                                                         //ex.printStackTrace();
+                                                    }
+                                                    finally {
+                                                        {
+                                                            RegisterCourseThread.hasSpots=true;
+                                                        }
                                                     }
                                                 });
                                             } catch (ExecutionException e) {
@@ -255,22 +279,44 @@ public class Firebase {
 
     }
 
-    public static void updateUserInfo(String section,String deviceID,String message) throws ExecutionException, InterruptedException {
-        Map<String,Object> selectedSections= (Map<String, Object>) db.collection("users")
+    public static void updateUserInfo(String section,String deviceID,String status,String title,String body) throws ExecutionException, InterruptedException {
+        Map<String, Object> user= db.collection("users")
                 .document(deviceID)
-                .get().get().get("selectedCourses");
-        Map<String,Object> map=new HashMap<>();
-        //map.put("selectedCourses",selectedSections);
+                .get().get().getData();
 
-        Map<String,Object> sectionname= (Map<String, Object>) selectedSections.get(section);
-        sectionname.put("status",message);
-        selectedSections.put(section,sectionname);
+        String fcmToken = (String) user.get("fcmToken");
+       // System.out.println(fcmToken);
+        Message fcmMessage = Message.builder()
+                .setNotification(new Notification(title, body))
+                .setToken(fcmToken)
+                .build();
+
+        try {
+            String response = FirebaseMessaging.getInstance().send(fcmMessage);
+           // System.out.println(response);
+        } catch (FirebaseMessagingException e) {
+            e.printStackTrace();
+        }
+
+     //   System.out.println(user.keySet());
+       // System.out.println(section);
+        Map<String,Object> sectionname= (Map<String, Object>) user.get(section);
+        Map<String,Object> map=new HashMap<>();
+        sectionname.put("status",status);
+        map.put(section,sectionname);
         ApiFuture<WriteResult> update=db.collection("users")
                 .document(deviceID)
-                .set(selectedSections,SetOptions.merge());
+                .set(map,SetOptions.merge());
+
+//        System.out.println("+++++++++++++");
     }
     public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
 
+//        Set<Cookie> cookies=getUserCookie("Xm45YTvcGDYzxBgo27uQYuaT3xF3");
+//        RegisterCourseThread thread=new RegisterCourseThread(cookies,
+//                "54524","UGRD","1192","QNS01",
+//                "Xm45YTvcGDYzxBgo27uQYuaT3xF3");
+//        thread.start();
     }
 
 }

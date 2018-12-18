@@ -11,13 +11,13 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 public class RegisterCourseThread extends Thread
 {
+    static boolean hasSpots=true;
     private String EMPLID="";
     private String CAREER="UGRD";
     private String INSTITUTION="QNS01";
@@ -71,7 +71,7 @@ public class RegisterCourseThread extends Thread
         client.getCookieManager().setCookiesEnabled(true);
         return client;
     }
-//
+
 //    /**
 //     * login to cunyfirst
 //     * @param client client
@@ -203,6 +203,7 @@ public class RegisterCourseThread extends Thread
         //get the shopping  cart page.
         HtmlPage homePage=client.getPage(CARTURL);
 
+
         //check if the course need a lab.
         String[] courses;
         boolean hasLab=false;
@@ -223,16 +224,25 @@ public class RegisterCourseThread extends Thread
         //go to the next page.
         URL url=new URL(baseURL);
 
+
         WebRequest firstReq=new WebRequest(url);
         firstReq.setHttpMethod(HttpMethod.POST);
         List<NameValuePair> list=getHiddenInput(homePage);
+
         list.add(new NameValuePair("ICAction","DERIVED_REGFRM1_SSR_PB_ADDTOLIST2$9$"));
         list.add(new NameValuePair("DERIVED_REGFRM1_CLASS_NBR",courses[0]));
-        list.add(new NameValuePair("P_SELECT$chk$0","N"));
+        //list.add(new NameValuePair("P_SELECT$chk$0","N"));
         list.add(new NameValuePair("DERIVED_REGFRM1_SSR_CLS_SRCH_TYPE$249$","06"));
+
+//        for (NameValuePair nameValuePair : list) {
+//            System.out.println(nameValuePair);
+//        }
 
         firstReq.setRequestParameters(list);
         XmlPage page=client.getPage(firstReq);
+
+        //printPage(page,"shopping.html");
+
         WebRequest secondReq=new WebRequest(url);
         List<NameValuePair> list2;
         if(hasLab) {
@@ -268,9 +278,10 @@ public class RegisterCourseThread extends Thread
         secondReq.setRequestParameters(list2);
 
         page=client.getPage(secondReq);
+       // System.out.println("in the cart++++++++++++++++++++");
+       // printPage(page,"inshopping.html");
         if(!page.asXml().contains(courses[0])) return false;
         return true;
-
     }
     private void addToList(List<NameValuePair> list,Elements elements){
         for(Element e:elements) {
@@ -333,7 +344,7 @@ public class RegisterCourseThread extends Thread
         request3.setRequestParameters(list);
         request3.setHttpMethod(HttpMethod.POST);
         XmlPage resultPage=client.getPage(request3);
-
+        printPage(resultPage,"result.html");
         String content=resultPage.asText();
         String firstStr="id=\'win0divDERIVED_REGFRM1_SSR_STATUS_LONG$0\'";
         int begin=content.indexOf(firstStr)+firstStr.length();
@@ -378,6 +389,7 @@ public class RegisterCourseThread extends Thread
             homePage=client.getPage(CARTURL);
             courseIndex=getSelectedCourses(homePage,courses[0]);
         }
+     //   System.out.println("--------------------");
         if(!validateCourse(client,courseNbr))
             return false;
         //get the first page to enroll which is a xmlpage.
@@ -420,8 +432,12 @@ public class RegisterCourseThread extends Thread
         String firstStr="<img src=\"/cs/cnyhcprd/cache850/PS_CS_STATUS_SUCCESS_ICN_1.gif\" width=\"16\" height=\"16\" alt=\"";
         begin=content.indexOf(firstStr)+firstStr.length();
         end=content.indexOf("\" class=\"SSSIMAGECENTER\"");
+        printPage(resultPage,"after.html");
         if(content.substring(begin,end).equals("Success"))
             return true;
+        else
+            hasSpots=false;
+       // System.out.println("111111111111111111111111111");
         return false;
     }
 
@@ -461,9 +477,21 @@ public class RegisterCourseThread extends Thread
             client.getCookieManager().addCookie(itr.next());
         }
     }
-    public static void main( String[] args ) throws IOException, ClassNotFoundException {
-
-    }
+//    public static void main( String[] args ) throws IOException, ClassNotFoundException, ExecutionException, InterruptedException {
+//        RegisterCourseThread thread=new RegisterCourseThread();
+//        thread.deviceID="ak2fqFQyYsWwjIBm9pBzqMqT92T2";
+//
+//        thread.cookies=Firebase.getUserCookie("ak2fqFQyYsWwjIBm9pBzqMqT92T2");
+//
+//        thread.INSTITUTION="QNS01";
+//        thread.STRM="1192";
+//        thread.CAREER="UGRD";
+//        thread.courseNbr="54524";
+//        //WebClient client=thread.initClient();
+//        //thread.login(client);
+//        //thread.enroll(client);
+//        thread.run();
+//    }
 
     public RegisterCourseThread(){}
     public RegisterCourseThread(Set<Cookie> cookies,String section,
@@ -488,14 +516,15 @@ public class RegisterCourseThread extends Thread
         client.setAlertHandler(new CollectingAlertHandler(collectedAlerts));
         try {
             setCookies(client);
-
             if(enroll(client)){
                 Firebase.deleteUserFromQueue(INSTITUTION,STRM,CAREER,courseNbr,deviceID);
-                Firebase.updateUserInfo(courseNbr,deviceID,"Registered");
+                Firebase.updateUserInfo(courseNbr,deviceID,"Registered","Successful","Successfully registered the section "+courseNbr);
+               // System.out.println("&&&&&&&&&&&&&&&&&&");
             }
             else{
                 if(!valid){
-                    Firebase.updateUserInfo(courseNbr,deviceID,"Unable to register");
+                    Firebase.deleteUserFromQueue(INSTITUTION,STRM,CAREER,courseNbr,deviceID);
+                    Firebase.updateUserInfo(courseNbr,deviceID,"Unable to register","Error","You cannot register the section "+courseNbr);
                 }
             }
         } catch (IOException e) {
@@ -508,6 +537,9 @@ public class RegisterCourseThread extends Thread
             e.printStackTrace();
         } catch (ExecutionException e) {
             e.printStackTrace();
+        }
+        finally{
+            client.close();
         }
 
     }

@@ -25,6 +25,7 @@ public class User implements Serializable {
         coursesNeedRegister.add(course);
     }
 }
+
 class Course implements  Serializable{
     public String courseNbr;
     public String time;

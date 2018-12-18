@@ -1,5 +1,7 @@
 package net.stevencai;
 
+import net.stevencai.Firebase;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
