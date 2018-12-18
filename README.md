@@ -1,2 +1,3 @@
 # CS370
-#steven is coming.
+
+# Term Project for Software Engineering Course 
